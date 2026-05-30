@@ -127,7 +127,7 @@ export default function MessageBubble({ message, onRegenerate, isStreaming = fal
         {/* Message Body */}
         <div className="message-body">
           <div className="message-sender">
-            {role === "user" ? "You" : "NeuralChat"}
+            {role === "user" ? "You" : "humanAI"}
           </div>
 
           {/* Message Content */}

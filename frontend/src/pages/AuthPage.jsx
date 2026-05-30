@@ -51,7 +51,7 @@ export default function AuthPage() {
           </svg>
         </div>
         
-        <h1 className="auth-heading">NeuralChat</h1>
+        <h1 className="auth-heading">humanAI</h1>
         <p className="auth-subheading">AI-powered conversations</p>
 
         {/* Tab Switcher */}

@@ -35,7 +35,7 @@ export default function Sidebar({ onNewChat, activeConvId, isCollapsed = false, 
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <span className="sidebar-logo-text">NeuralChat</span>
+          <span className="sidebar-logo-text">humanAI</span>
         </div>
         <div className="sidebar-header-actions">
           <button className="btn-new-chat" onClick={onNewChat} title="New chat">

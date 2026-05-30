@@ -67,7 +67,7 @@ export default function ChatInput({ onSend, disabled, onAttach, isStreaming, onS
               onKeyDown={onKey}
               onFocus={() => setFocus(true)}
               onBlur={() => setFocus(false)}
-              placeholder={disabled ? "Waiting for response..." : "Message NeuralChat..."}
+              placeholder={disabled ? "Waiting for response..." : "Message humanAI..."}
               disabled={disabled}
               rows={1}
               className="chat-textarea"
@@ -125,7 +125,7 @@ export default function ChatInput({ onSend, disabled, onAttach, isStreaming, onS
 
         {/* Disclaimer */}
         <div className="chat-disclaimer">
-          NeuralChat may produce inaccurate information.{" "}
+          humanAI may produce inaccurate information.{" "}
           <a href="#" target="_blank" rel="noopener noreferrer">Learn more</a>
         </div>
       </div>
