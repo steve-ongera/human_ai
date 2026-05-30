@@ -2,65 +2,7 @@
 import { useState } from "react";
 import { messages } from "../services/api";
 
-const s = {
-  wrap: (role) => ({
-    display: "flex",
-    flexDirection: role === "user" ? "row-reverse" : "row",
-    gap: "12px",
-    alignItems: "flex-start",
-    marginBottom: "20px",
-    animation: "fadeSlide .25s ease",
-  }),
-  avatar: (role) => ({
-    width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: "14px", fontWeight: 700,
-    background: role === "user"
-      ? "linear-gradient(135deg, #4f46e5, #7c6aff)"
-      : "linear-gradient(135deg, #06b6d4, #3b82f6)",
-    color: "#fff",
-  }),
-  bubble: (role) => ({
-    maxWidth: "72%",
-    padding: "12px 16px",
-    borderRadius: role === "user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
-    background: role === "user" ? "var(--accent)" : "var(--surface2)",
-    color: "var(--text)",
-    fontSize: "14px",
-    lineHeight: "1.65",
-    fontFamily: "'Syne', sans-serif",
-    border: "1px solid " + (role === "user" ? "transparent" : "var(--border)"),
-    position: "relative",
-  }),
-  code: {
-    background: "#0d0d18",
-    border: "1px solid var(--border)",
-    borderRadius: "8px",
-    padding: "12px",
-    margin: "8px 0",
-    fontFamily: "'DM Mono', monospace",
-    fontSize: "12px",
-    overflowX: "auto",
-    display: "block",
-    color: "#a78bfa",
-  },
-  actions: {
-    display: "flex", gap: "6px", marginTop: "8px",
-  },
-  actionBtn: (active) => ({
-    background: "none", border: "none", cursor: "pointer",
-    color: active ? "var(--accent)" : "var(--text-muted)",
-    fontSize: "13px", padding: "2px 4px", borderRadius: "4px",
-    transition: "color .15s",
-  }),
-  meta: {
-    fontSize: "10px", color: "var(--text-muted)",
-    marginTop: "4px",
-    fontFamily: "'DM Mono', monospace",
-  },
-};
-
-// Very minimal markdown parser — code blocks + inline code
+// Helper to render markdown-like content with code blocks
 function renderContent(content) {
   const parts = [];
   let rest = content;
@@ -82,22 +24,73 @@ function renderContent(content) {
     }
     const block = rest.slice(codeIdx + 3, endIdx);
     const newline = block.indexOf("\n");
+    const language = newline === -1 ? "" : block.slice(0, newline).trim();
     const code = newline === -1 ? block : block.slice(newline + 1);
-    parts.push(<code key={key++} style={s.code}>{code}</code>);
+    
+    parts.push(
+      <div key={key++} className="code-block">
+        <div className="code-block-header">
+          <span className="code-block-lang">{language || "code"}</span>
+          <button className="code-block-copy" data-code={code}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <pre><code>{code}</code></pre>
+      </div>
+    );
     rest = rest.slice(endIdx + 3);
   }
   return parts;
 }
 
 function renderInline(text) {
-  return text.split(/(`[^`]+`)/g).map((part, i) =>
-    part.startsWith("`") && part.endsWith("`")
-      ? <code key={i} style={{ ...s.code, display: "inline", padding: "1px 5px", margin: 0 }}>{part.slice(1, -1)}</code>
-      : part
-  );
+  // Split by inline code blocks
+  const parts = [];
+  let current = text;
+  let idx = 0;
+  
+  while (current) {
+    const codeStart = current.indexOf("`");
+    if (codeStart === -1) {
+      parts.push(current);
+      break;
+    }
+    if (codeStart > 0) {
+      parts.push(current.slice(0, codeStart));
+    }
+    const codeEnd = current.indexOf("`", codeStart + 1);
+    if (codeEnd === -1) {
+      parts.push(current.slice(codeStart));
+      break;
+    }
+    const code = current.slice(codeStart + 1, codeEnd);
+    parts.push(
+      <code key={`code-${idx++}`} className="inline-code">
+        {code}
+      </code>
+    );
+    current = current.slice(codeEnd + 1);
+  }
+  
+  // Convert newlines to <br> tags
+  return parts.map((part, i) => {
+    if (typeof part === "string") {
+      return part.split("\n").map((line, j) => (
+        <span key={`line-${i}-${j}`}>
+          {line}
+          {j < part.split("\n").length - 1 && <br />}
+        </span>
+      ));
+    }
+    return part;
+  });
 }
 
-export default function MessageBubble({ message, onRegenerate }) {
+export default function MessageBubble({ message, onRegenerate, isStreaming = false }) {
   const { role, content, id, user_rating, total_tokens, latency_ms, model_name } = message;
   const [rating, setRating] = useState(user_rating);
   const [copied, setCopied] = useState(false);
@@ -115,43 +108,115 @@ export default function MessageBubble({ message, onRegenerate }) {
   };
 
   return (
-    <div style={s.wrap(role)}>
-      <div style={s.avatar(role)}>
-        {role === "user" ? "U" : <i className="bi bi-stars" />}
-      </div>
-      <div>
-        <div style={s.bubble(role)}>
-          {renderContent(content)}
+    <div className={`message-row message-row--${role}`}>
+      <div className={`message-container message-container--${role}`}>
+        {/* Avatar */}
+        <div className={`message-avatar message-avatar--${role}`}>
+          {role === "user" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          )}
         </div>
 
-        {/* Actions row */}
-        {role === "assistant" && (
-          <div style={s.actions}>
-            <button style={s.actionBtn(copied)} onClick={copy} title="Copy">
-              <i className={`bi bi-${copied ? "check2" : "clipboard"}`} />
-            </button>
-            <button style={s.actionBtn(rating === 1)} onClick={() => rate(1)} title="Good">
-              <i className="bi bi-hand-thumbs-up" />
-            </button>
-            <button style={s.actionBtn(rating === -1)} onClick={() => rate(-1)} title="Bad">
-              <i className="bi bi-hand-thumbs-down" />
-            </button>
-            {onRegenerate && (
-              <button style={s.actionBtn(false)} onClick={onRegenerate} title="Regenerate">
-                <i className="bi bi-arrow-clockwise" />
-              </button>
+        {/* Message Body */}
+        <div className="message-body">
+          <div className="message-sender">
+            {role === "user" ? "You" : "NeuralChat"}
+          </div>
+
+          {/* Message Content */}
+          <div className={`message-content ${role === "user" ? "message-content--user" : ""}`}>
+            {isStreaming && role === "assistant" && content === "" ? (
+              <div className="typing-indicator">
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+              </div>
+            ) : (
+              <>
+                {renderContent(content)}
+                {isStreaming && role === "assistant" && content && (
+                  <span className="streaming-cursor" />
+                )}
+              </>
             )}
           </div>
-        )}
 
-        {/* Meta */}
-        {role === "assistant" && (total_tokens > 0 || model_name) && (
-          <div style={s.meta}>
-            {model_name && <span>{model_name}</span>}
-            {total_tokens > 0 && <span> · {total_tokens} tokens</span>}
-            {latency_ms  > 0 && <span> · {latency_ms}ms</span>}
-          </div>
-        )}
+          {/* Message Actions (only for assistant messages) */}
+          {role === "assistant" && !isStreaming && (
+            <div className="message-actions">
+              <button
+                className={`message-action-btn ${copied ? "active" : ""}`}
+                onClick={copy}
+                title="Copy"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                </svg>
+              </button>
+              <button
+                className={`message-action-btn ${rating === 1 ? "active" : ""}`}
+                onClick={() => rate(1)}
+                title="Good response"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+              </button>
+              <button
+                className={`message-action-btn ${rating === -1 ? "active" : ""}`}
+                onClick={() => rate(-1)}
+                title="Bad response"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V5h-11.3a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3zM17 5h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+                </svg>
+              </button>
+              {onRegenerate && (
+                <button
+                  className="message-action-btn"
+                  onClick={onRegenerate}
+                  title="Regenerate response"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M23 1l-6 6M1 23l6-6M23 23l-6-6M1 1l6 6" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Metadata / Usage Info */}
+          {role === "assistant" && (total_tokens > 0 || model_name || latency_ms > 0) && (
+            <div className="message-meta" style={{ 
+              fontSize: "var(--font-size-xs)", 
+              color: "var(--color-gray-500)", 
+              marginTop: "var(--space-2)",
+              display: "flex",
+              gap: "var(--space-2)",
+              flexWrap: "wrap"
+            }}>
+              {model_name && (
+                <span className="badge badge-gray">{model_name}</span>
+              )}
+              {total_tokens > 0 && (
+                <span>{total_tokens} tokens</span>
+              )}
+              {latency_ms > 0 && (
+                <span>{latency_ms}ms</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

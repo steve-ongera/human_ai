@@ -1,36 +1,13 @@
 // components/ModelSelector.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { models } from "../services/api";
 
-const s = {
-  wrap: { position: "relative", display: "inline-block" },
-  btn: {
-    display: "flex", alignItems: "center", gap: "6px",
-    background: "var(--surface2)", border: "1px solid var(--border)",
-    borderRadius: "8px", padding: "5px 10px", cursor: "pointer",
-    color: "var(--text-muted)", fontSize: "12px",
-    transition: "all .15s",
-  },
-  dropdown: {
-    position: "absolute", top: "calc(100% + 4px)", left: 0,
-    background: "var(--surface)", border: "1px solid var(--border)",
-    borderRadius: "10px", minWidth: "200px",
-    boxShadow: "0 8px 32px #0006", zIndex: 50, overflow: "hidden",
-  },
-  item: (active) => ({
-    display: "flex", flexDirection: "column",
-    padding: "10px 14px", cursor: "pointer",
-    background: active ? "var(--surface2)" : "transparent",
-    transition: "background .1s", border: "none", width: "100%", textAlign: "left",
-  }),
-  itemName: { fontSize: "13px", color: "var(--text)", fontWeight: active => active ? 600 : 400 },
-  itemType: { fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" },
-};
-
 export default function ModelSelector({ value, onChange }) {
-  const [open, setOpen]       = useState(false);
-  const [modelList, setList]  = useState([]);
+  const [open, setOpen] = useState(false);
+  const [modelList, setList] = useState([]);
   const [selected, setSelected] = useState(null);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     models.list().then(r => {
@@ -46,6 +23,22 @@ export default function ModelSelector({ value, onChange }) {
     }).catch(() => {});
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (open && 
+          dropdownRef.current && 
+          !dropdownRef.current.contains(event.target) &&
+          buttonRef.current &&
+          !buttonRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
   const select = (model) => {
     setSelected(model);
     onChange?.(model);
@@ -53,35 +46,79 @@ export default function ModelSelector({ value, onChange }) {
   };
 
   return (
-    <div style={s.wrap}>
-      <button style={s.btn} onClick={() => setOpen(o => !o)}>
-        <i className="bi bi-cpu" />
-        <span>{selected?.display_name || "Select model"}</span>
-        <i className={`bi bi-chevron-${open ? "up" : "down"}`} style={{ fontSize: 10 }} />
+    <div className="dropdown" ref={dropdownRef}>
+      <button
+        ref={buttonRef}
+        className="model-selector"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+      >
+        <span className="model-selector-name">
+          {selected?.display_name || "Select model"}
+        </span>
+        <svg className="model-selector-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
 
       {open && (
-        <div style={s.dropdown}>
-          {modelList.length === 0 && (
-            <div style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: "13px" }}>
-              No models configured
-            </div>
-          )}
-          {modelList.map(m => (
-            <button
-              key={m.id}
-              style={s.item(m.id === selected?.id)}
-              onClick={() => select(m)}
-            >
-              <span style={{ ...s.itemName, fontWeight: m.id === selected?.id ? 600 : 400 }}>
-                {m.display_name}
-                {m.is_default && (
-                  <span style={{ marginLeft: 6, fontSize: 10, color: "var(--accent)" }}>default</span>
-                )}
-              </span>
-              <span style={s.itemType}>{m.model_type} · ctx {m.context_length?.toLocaleString()}</span>
-            </button>
-          ))}
+        <div className="model-dropdown">
+          <div className="model-dropdown-header">
+            <div className="model-dropdown-title">Select a model</div>
+          </div>
+          
+          <div className="model-dropdown-list">
+            {modelList.length === 0 && (
+              <div style={{ padding: "var(--space-6) var(--space-4)", textAlign: "center", color: "var(--color-gray-500)" }}>
+                No models available
+              </div>
+            )}
+            
+            {modelList.map(m => {
+              const isSelected = m.id === selected?.id;
+              const isDefault = m.is_default;
+              
+              return (
+                <div
+                  key={m.id}
+                  className={`model-dropdown-item ${isSelected ? "selected" : ""}`}
+                  onClick={() => select(m)}
+                >
+                  <div className="model-dropdown-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <div className="model-dropdown-item-body">
+                    <div className="model-dropdown-item-name">
+                      {m.display_name || m.name}
+                      {isDefault && (
+                        <span className="model-dropdown-item-badge">Default</span>
+                      )}
+                    </div>
+                    <div className="model-dropdown-item-desc">
+                      {m.model_type || "Chat model"} · ctx {m.context_length?.toLocaleString() || "32k"}
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <svg className="model-dropdown-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="model-dropdown-footer">
+            <a href="#" className="model-dropdown-footer-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+              Learn about models
+            </a>
+          </div>
         </div>
       )}
     </div>
