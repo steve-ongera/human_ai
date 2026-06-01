@@ -4,8 +4,8 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import App from "./App";
-import "./index.css";  // Import base styles
-import "./styles/main.css";  // Import main theme styles
+import "./index.css";
+import "./styles/main.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -16,3 +16,6 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+// Hide the loading screen once React has rendered
+window.__hideLoader?.();

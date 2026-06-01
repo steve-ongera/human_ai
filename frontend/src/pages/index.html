@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChatGPT Clone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ─────────────────────────────────────────
+   DESIGN TOKENS
+───────────────────────────────────────── */
+:root {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --radius-xs:   3px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   18px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  --sidebar-w:   260px;
+  --header-h:    54px;
+  --chat-max:    720px;
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-sidebar:  200;
+  --z-overlay:  190;
+  --z-header:   100;
+  --z-dropdown: 300;
+  --z-toast:    400;
+}
+
+/* DARK THEME */
+[data-theme="dark"] {
+  --bg-app:       #1e1f25;
+  --bg-chat:      #252630;
+  --bg-sidebar:   #16171c;
+  --bg-input:     #2d2e3a;
+  --bg-hover:     rgba(255,255,255,0.055);
+  --bg-active:    rgba(255,255,255,0.09);
+  --bg-msg-ai:    #2a2b38;
+  --bg-msg-user:  #10a37f;
+  --bg-code:      #131318;
+  --bg-btn:       rgba(255,255,255,0.08);
+  --bg-badge:     rgba(16,163,127,0.18);
+
+  --border:       rgba(255,255,255,0.07);
+  --border-focus: rgba(16,163,127,0.5);
+  --border-input: rgba(255,255,255,0.09);
+
+  --text-primary:  #f0f0f4;
+  --text-secondary:#9899aa;
+  --text-muted:    #5c5d6e;
+  --text-on-brand: #ffffff;
+  --text-on-user:  #ffffff;
+  --text-code:     #c8c8d4;
+
+  --brand:         #10a37f;
+  --brand-hover:   #0d8f6f;
+  --brand-alpha:   rgba(16,163,127,0.15);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.35);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.45);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.55);
+  --shadow-input: 0 0 0 3px rgba(16,163,127,0.22);
+
+  --scrollbar-thumb: rgba(255,255,255,0.12);
+  --scrollbar-hover: rgba(255,255,255,0.22);
+}
+
+/* LIGHT THEME */
+[data-theme="light"] {
+  --bg-app:       #f5f5f7;
+  --bg-chat:      #ffffff;
+  --bg-sidebar:   #f0f0f3;
+  --bg-input:     #f7f7f9;
+  --bg-hover:     rgba(0,0,0,0.04);
+  --bg-active:    rgba(0,0,0,0.07);
+  --bg-msg-ai:    #f3f3f6;
+  --bg-msg-user:  #10a37f;
+  --bg-code:      #f0f0f4;
+  --bg-btn:       rgba(0,0,0,0.05);
+  --bg-badge:     rgba(16,163,127,0.12);
+
+  --border:       rgba(0,0,0,0.07);
+  --border-focus: rgba(16,163,127,0.5);
+  --border-input: rgba(0,0,0,0.10);
+
+  --text-primary:  #1a1a2e;
+  --text-secondary:#5a5a72;
+  --text-muted:    #9090a8;
+  --text-on-brand: #ffffff;
+  --text-on-user:  #ffffff;
+  --text-code:     #2c2c40;
+
+  --brand:         #10a37f;
+  --brand-hover:   #0d8f6f;
+  --brand-alpha:   rgba(16,163,127,0.12);
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.14);
+  --shadow-input: 0 0 0 3px rgba(16,163,127,0.18);
+
+  --scrollbar-thumb: rgba(0,0,0,0.12);
+  --scrollbar-hover: rgba(0,0,0,0.22);
+}
+
+/* ─────────────────────────────────────────
+   RESET
+───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  height: 100dvh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s, color 0.25s;
+}
+
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+input, textarea { font: inherit; color: inherit; }
+a { color: var(--brand); text-decoration: none; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--radius-sm); }
+::selection { background: rgba(16,163,127,0.25); }
+
+/* ─────────────────────────────────────────
+   APP SHELL
+───────────────────────────────────────── */
+.app { display: flex; height: 100dvh; overflow: hidden; }
+
+/* ─────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100%;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.28s var(--ease-out), background 0.25s;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  z-index: var(--z-sidebar);
+}
+
+.sidebar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px 8px;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  transition: background 0.15s;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+}
+.sidebar-logo:hover { background: var(--bg-hover); }
+.logo-icon {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: var(--brand);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg { width: 16px; height: 16px; color: #fff; }
+.logo-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.icon-btn svg { width: 17px; height: 17px; }
+
+.sidebar-search {
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+}
+.search-wrap {
+  position: relative;
+}
+.search-wrap svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; color: var(--text-muted); pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 7px 10px 7px 32px;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.25s;
+  outline: none;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--brand); box-shadow: var(--shadow-input); background: var(--bg-input); }
+
+.sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 4px 0; }
+
+.nav-section { padding-bottom: 4px; }
+.nav-section-label {
+  padding: 8px 18px 4px;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  user-select: none;
+}
+
+.conv-item {
+  display: flex; align-items: center;
+  padding: 7px 10px;
+  margin: 1px 6px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  gap: 10px;
+  position: relative;
+  transition: background 0.12s;
+  min-height: 38px;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13.5px;
+}
+.conv-item:hover { background: var(--bg-hover); }
+.conv-item.active { background: var(--bg-active); }
+.conv-item svg { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+.conv-title {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  line-height: 1.35;
+}
+.conv-fade {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 60px;
+  background: linear-gradient(to right, transparent, var(--bg-sidebar));
+  pointer-events: none; transition: background 0.12s;
+}
+.conv-item:hover .conv-fade { background: linear-gradient(to right, transparent, var(--bg-hover)); }
+.conv-item.active .conv-fade { background: linear-gradient(to right, transparent, var(--bg-active)); }
+.conv-actions {
+  display: none; align-items: center; gap: 2px;
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  z-index: 1;
+}
+.conv-item:hover .conv-actions, .conv-item.active .conv-actions { display: flex; }
+.conv-action-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  color: var(--text-muted); transition: color 0.12s, background 0.12s;
+}
+.conv-action-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+.conv-action-btn svg { width: 13px; height: 13px; }
+
+.sidebar-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 8px;
+}
+.user-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  width: 100%;
+  transition: background 0.12s;
+  text-align: left;
+}
+.user-btn:hover { background: var(--bg-hover); }
+.user-avatar {
+  width: 30px; height: 30px; border-radius: var(--radius-full);
+  background: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0; user-select: none;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  line-height: 1.3;
+}
+.user-plan { font-size: 11px; color: var(--text-muted); }
+.user-chevron { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+
+/* Upgrade banner */
+.upgrade-card {
+  margin: 0 6px 8px;
+  padding: 12px 14px;
+  background: var(--brand-alpha);
+  border: 1px solid rgba(16,163,127,0.22);
+  border-radius: var(--radius-lg);
+}
+.upgrade-card-title { font-size: 12.5px; font-weight: 700; color: var(--brand); margin-bottom: 3px; }
+.upgrade-card-desc { font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; margin-bottom: 10px; }
+.upgrade-card-btn {
+  display: block; width: 100%;
+  background: var(--brand); color: #fff;
+  padding: 7px 12px; border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 600; text-align: center;
+  transition: background 0.15s;
+}
+.upgrade-card-btn:hover { background: var(--brand-hover); }
+
+/* ─────────────────────────────────────────
+   MAIN CONTENT
+───────────────────────────────────────── */
+.main {
+  flex: 1; display: flex; flex-direction: column;
+  height: 100%; min-width: 0;
+  background: var(--bg-chat);
+  transition: background 0.25s;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────
+   HEADER
+───────────────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--header-h);
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 10px;
+  z-index: var(--z-header);
+  background: var(--bg-chat);
+  transition: background 0.25s;
+}
+.header-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.header-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+.model-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  transition: background 0.12s;
+  max-width: 220px;
+}
+.model-btn:hover { background: var(--bg-hover); }
+.model-btn-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-btn svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
+.model-btn.open svg { transform: rotate(180deg); }
+
+/* Model dropdown */
+.model-dropdown {
+  position: absolute;
+  top: calc(var(--header-h) + 6px);
+  left: 14px;
+  width: 300px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  overflow: hidden;
+  animation: dropIn 0.15s var(--ease-out);
+}
+@keyframes dropIn {
+  from { opacity:0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+.dropdown-header { padding: 14px 16px 8px; border-bottom: 1px solid var(--border); }
+.dropdown-header-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+.dropdown-list { padding: 6px 0; }
+.dropdown-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 16px; cursor: pointer;
+  transition: background 0.12s;
+}
+.dropdown-item:hover { background: var(--bg-hover); }
+.dropdown-item.selected { background: var(--brand-alpha); }
+.dropdown-item-icon {
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  background: var(--bg-btn); display: flex; align-items: center; justify-content: center;
+  color: var(--brand); font-weight: 700; font-size: 13px; flex-shrink: 0;
+}
+.dropdown-item-body { flex: 1; min-width: 0; }
+.dropdown-item-name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.dropdown-item-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.dropdown-item-badge {
+  display: inline-flex; align-items: center;
+  font-size: 10.5px; font-weight: 700;
+  padding: 1px 7px; border-radius: 99px;
+  background: var(--bg-badge); color: var(--brand);
+  margin-top: 4px;
+}
+.dropdown-item-check { width: 15px; height: 15px; color: var(--brand); flex-shrink: 0; margin-top: 3px; }
+
+/* Theme toggle pill */
+.theme-toggle {
+  display: flex; align-items: center;
+  background: var(--bg-btn);
+  border-radius: 99px;
+  padding: 3px;
+  gap: 2px;
+}
+.theme-opt {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 99px;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+}
+.theme-opt svg { width: 15px; height: 15px; }
+.theme-opt.active { background: var(--bg-chat); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+.header-action {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.header-action:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
+.header-action svg { width: 14px; height: 14px; }
+
+/* ─────────────────────────────────────────
+   CHAT AREA
+───────────────────────────────────────── */
+.chat-body { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+.chat-inner { max-width: var(--chat-max); margin: 0 auto; padding: 16px 20px 32px; }
+
+/* Welcome screen */
+.welcome {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100dvh - var(--header-h) - 140px);
+  text-align: center; padding: 32px 16px;
+}
+.welcome-icon {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: var(--brand); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(16,163,127,0.3);
+}
+.welcome-icon svg { width: 26px; height: 26px; color: #fff; }
+.welcome-title {
+  font-size: 28px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.03em; margin-bottom: 8px; line-height: 1.2;
+}
+.welcome-sub { font-size: 15px; color: var(--text-secondary); margin-bottom: 36px; max-width: 420px; line-height: 1.6; }
+
+.suggestion-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 560px; }
+.suggestion-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-hover);
+  cursor: pointer; text-align: left;
+  transition: background 0.12s, border-color 0.12s, transform 0.15s var(--ease-spring);
+}
+.suggestion-card:hover { background: var(--bg-active); border-color: rgba(16,163,127,0.25); transform: translateY(-2px); }
+.sug-icon {
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  background: var(--bg-btn); display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.sug-title { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.3; margin-bottom: 2px; }
+.sug-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* Messages */
+.msg-row {
+  display: flex; gap: 12px;
+  padding: 10px 0;
+  animation: msgAppear 0.22s var(--ease-out);
+}
+@keyframes msgAppear {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.msg-row.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 30px; height: 30px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  user-select: none;
+}
+.msg-avatar.ai { background: var(--bg-btn); color: var(--text-primary); border: 1px solid var(--border); }
+.msg-avatar.user { background: var(--brand); color: #fff; }
+.msg-avatar svg { width: 15px; height: 15px; }
+
+.msg-body { flex: 1; min-width: 0; max-width: 88%; }
+.msg-row.user .msg-body { display: flex; flex-direction: column; align-items: flex-end; }
+
+.msg-bubble {
+  display: inline-block;
+  font-size: 15px; line-height: 1.65;
+  word-break: break-word;
+}
+.msg-bubble.ai { color: var(--text-primary); }
+.msg-bubble.user {
+  background: var(--brand); color: #fff;
+  padding: 10px 15px;
+  border-radius: 16px 16px 4px 16px;
+}
+
+/* AI message markdown-ish */
+.msg-bubble.ai p { margin-bottom: 10px; }
+.msg-bubble.ai p:last-child { margin-bottom: 0; }
+.msg-bubble.ai ul, .msg-bubble.ai ol { margin: 10px 0; padding-left: 20px; }
+.msg-bubble.ai ul { list-style: disc; }
+.msg-bubble.ai ol { list-style: decimal; }
+.msg-bubble.ai li { margin-bottom: 4px; }
+.msg-bubble.ai strong { font-weight: 700; color: var(--text-primary); }
+.msg-bubble.ai h3 { font-size: 16px; font-weight: 700; margin: 14px 0 6px; color: var(--text-primary); }
+.msg-bubble.ai code:not(pre code) {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 4px; font-family: var(--font-mono);
+  font-size: 13px; padding: 1px 5px; color: var(--text-code);
+}
+
+/* Code block */
+.code-block { margin: 12px 0; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); background: var(--bg-code); }
+.code-block-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+.code-lang { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); }
+.code-copy {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--text-muted);
+  padding: 3px 8px; border-radius: var(--radius-sm);
+  transition: color 0.12s, background 0.12s;
+}
+.code-copy:hover { color: var(--text-primary); background: var(--bg-hover); }
+.code-copy svg { width: 13px; height: 13px; }
+.code-block pre { padding: 14px; overflow-x: auto; margin: 0; }
+.code-block code { font-family: var(--font-mono); font-size: 13.5px; line-height: 1.7; color: var(--text-code); }
+
+/* Message actions */
+.msg-actions {
+  display: flex; align-items: center; gap: 2px;
+  margin-top: 6px; opacity: 0;
+  transition: opacity 0.15s;
+}
+.msg-row:hover .msg-actions { opacity: 1; }
+.msg-action-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  color: var(--text-muted); transition: color 0.12s, background 0.12s;
+}
+.msg-action-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+.msg-action-btn.liked { color: var(--brand); }
+.msg-action-btn svg { width: 14px; height: 14px; }
+
+/* Typing indicator */
+.typing-row { display: flex; gap: 12px; padding: 10px 0; }
+.typing-dots { display: flex; align-items: center; gap: 4px; padding: 12px 14px; background: var(--bg-msg-ai); border-radius: 12px 12px 12px 4px; }
+.typing-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--text-muted); animation: typeBounce 1.2s ease-in-out infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes typeBounce {
+  0%,80%,100% { transform: translateY(0); opacity:0.4; }
+  40%          { transform: translateY(-5px); opacity:1; }
+}
+
+/* Scroll to bottom */
+.scroll-btn {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 99px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-secondary); box-shadow: var(--shadow-md);
+  cursor: pointer; z-index: 20;
+  transition: background 0.12s, color 0.12s;
+}
+.scroll-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.scroll-btn svg { width: 15px; height: 15px; }
+.scroll-btn.hidden { display: none; }
+
+/* ─────────────────────────────────────────
+   CHAT INPUT
+───────────────────────────────────────── */
+.input-area {
+  flex-shrink: 0;
+  padding: 12px 16px 20px;
+  background: var(--bg-chat);
+  transition: background 0.25s;
+}
+.input-inner { max-width: var(--chat-max); margin: 0 auto; }
+
+.input-box {
+  position: relative;
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-xl);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.25s;
+  box-shadow: var(--shadow-sm);
+}
+.input-box:focus-within {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-input), var(--shadow-sm);
+}
+
+/* Attachment row */
+.attachment-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px 0; }
+.att-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px 4px 10px;
+  background: var(--bg-hover); border: 1px solid var(--border);
+  border-radius: 99px; font-size: 12px; color: var(--text-secondary);
+  max-width: 200px;
+}
+.att-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.att-chip-rm {
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 99px;
+  background: var(--bg-btn); color: var(--text-muted);
+  font-size: 12px; cursor: pointer; flex-shrink: 0;
+  transition: background 0.12s; line-height: 1;
+}
+.att-chip-rm:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+
+.textarea-row {
+  display: flex; align-items: flex-end; gap: 6px;
+  padding: 10px 10px 10px;
+}
+.chat-textarea {
+  flex: 1; background: transparent; border: none; outline: none;
+  resize: none; color: var(--text-primary);
+  font-size: 15px; line-height: 1.6; font-family: var(--font-sans);
+  min-height: 24px; max-height: 192px; overflow-y: auto;
+  padding: 2px 0; caret-color: var(--brand);
+}
+.chat-textarea::placeholder { color: var(--text-muted); }
+.chat-textarea::-webkit-scrollbar { width: 0; }
+
+.input-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  color: var(--text-muted); flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.input-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.input-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.input-btn svg { width: 18px; height: 18px; }
+
+.send-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  background: var(--brand); color: #fff; flex-shrink: 0;
+  transition: background 0.12s, transform 0.12s var(--ease-spring), opacity 0.15s;
+  box-shadow: 0 2px 8px rgba(16,163,127,0.35);
+}
+.send-btn:hover:not(:disabled) { background: var(--brand-hover); transform: scale(1.06); }
+.send-btn:disabled { background: var(--bg-btn); color: var(--text-muted); box-shadow: none; cursor: not-allowed; }
+.send-btn svg { width: 16px; height: 16px; }
+
+.toolbar-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px 10px; gap: 8px;
+}
+.toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 2px; }
+.toolbar-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 9px; border-radius: 99px;
+  font-size: 12px; color: var(--text-muted);
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.toolbar-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.toolbar-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.disclaimer {
+  text-align: center; font-size: 11.5px; color: var(--text-muted);
+  margin-top: 8px; line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────
+   MOBILE OVERLAY
+───────────────────────────────────────── */
+.mobile-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: var(--z-overlay);
+  backdrop-filter: blur(2px);
+}
+.mobile-overlay.show { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+
+/* Tablet / small desktop */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 240px; }
+  .header-action span { display: none; }
+  .header-action { padding: 6px 8px; }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; height: 100%;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .header { padding: 0 10px; }
+  .model-btn-name { max-width: 100px; font-size: 13.5px; }
+
+  .chat-inner { padding: 12px 14px 28px; }
+  .msg-body { max-width: 95%; }
+
+  .input-area { padding: 10px 12px 16px; }
+  .suggestion-grid { grid-template-columns: 1fr; }
+  .welcome-title { font-size: 22px; }
+  .welcome-sub { font-size: 14px; }
+  .welcome-icon { width: 44px; height: 44px; border-radius: 13px; }
+  .welcome-icon svg { width: 22px; height: 22px; }
+}
+
+@media (max-width: 420px) {
+  .toolbar-btn span { display: none; }
+  .toolbar-btn { padding: 5px; }
+  .model-btn-name { max-width: 80px; }
+}
+
+/* ─────────────────────────────────────────
+   UTILITIES
+───────────────────────────────────────── */
+.hidden { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<!-- MOBILE OVERLAY -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+
+  <!-- ════════ SIDEBAR ════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Top -->
+    <div class="sidebar-top">
+      <a href="#" class="sidebar-logo" onclick="showWelcome();return false;">
+        <div class="logo-icon">
+          <!-- GPT logo -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M8 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <span class="logo-text">ChatGPT</span>
+      </a>
+      <button class="icon-btn" onclick="newChat()" title="New chat" aria-label="New chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="sidebar-search">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input class="search-input" type="text" placeholder="Search conversations…" aria-label="Search" />
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-section">
+        <div class="nav-section-label">Today</div>
+        <div class="conv-item active" onclick="selectConv(this, 'Design System Help')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">Design System Help</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+          </div>
+        </div>
+        <div class="conv-item" onclick="selectConv(this, 'Python Script Review')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">Python Script Review</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+          </div>
+        </div>
+        <div class="conv-item" onclick="selectConv(this, 'Travel Itinerary')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">Travel Itinerary — Nairobi</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2v2"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Yesterday</div>
+        <div class="conv-item" onclick="selectConv(this, 'API Integration Guide')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">API Integration Guide</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+          </div>
+        </div>
+        <div class="conv-item" onclick="selectConv(this, 'Recipe Suggestions')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">Recipe Suggestions for Dinner</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Last 7 days</div>
+        <div class="conv-item" onclick="selectConv(this, 'Marketing Strategy')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <span class="conv-title">Q3 Marketing Strategy</span>
+          <div class="conv-fade"></div>
+          <div class="conv-actions">
+            <button class="conv-action-btn" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+            <button class="conv-action-btn" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Upgrade banner -->
+    <div class="upgrade-card">
+      <div class="upgrade-card-title">Upgrade to Plus</div>
+      <div class="upgrade-card-desc">Access GPT-4o, DALL·E, and advanced features.</div>
+      <a href="#" class="upgrade-card-btn" onclick="return false;">Upgrade plan</a>
+    </div>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <button class="user-btn">
+        <div class="user-avatar">U</div>
+        <div class="user-info">
+          <div class="user-name">User</div>
+          <div class="user-plan">Free plan</div>
+        </div>
+        <svg class="user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 15l-6-6-6 6"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ════════ MAIN ════════ -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <!-- Mobile hamburger -->
+        <button class="icon-btn" id="hamburger" onclick="openSidebar()" title="Open menu" aria-label="Open sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+
+        <!-- Model selector -->
+        <div style="position:relative;">
+          <button class="model-btn" id="modelBtn" onclick="toggleModelDropdown()" aria-haspopup="true" aria-expanded="false">
+            <span class="model-btn-name" id="modelName">GPT-4o</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          <!-- Model dropdown -->
+          <div class="model-dropdown hidden" id="modelDropdown">
+            <div class="dropdown-header"><div class="dropdown-header-label">Model</div></div>
+            <div class="dropdown-list">
+              <div class="dropdown-item selected" onclick="selectModel('GPT-4o', this)">
+                <div class="dropdown-item-icon">4o</div>
+                <div class="dropdown-item-body">
+                  <div class="dropdown-item-name">GPT-4o</div>
+                  <div class="dropdown-item-desc">Great for most tasks</div>
+                  <div class="dropdown-item-badge">Recommended</div>
+                </div>
+                <svg class="dropdown-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+              <div class="dropdown-item" onclick="selectModel('GPT-4o mini', this)">
+                <div class="dropdown-item-icon">4m</div>
+                <div class="dropdown-item-body">
+                  <div class="dropdown-item-name">GPT-4o mini</div>
+                  <div class="dropdown-item-desc">Faster and lighter</div>
+                </div>
+              </div>
+              <div class="dropdown-item" onclick="selectModel('o1', this)">
+                <div class="dropdown-item-icon">o1</div>
+                <div class="dropdown-item-body">
+                  <div class="dropdown-item-name">o1</div>
+                  <div class="dropdown-item-desc">Advanced reasoning</div>
+                  <div class="dropdown-item-badge">Plus</div>
+                </div>
+              </div>
+              <div class="dropdown-item" onclick="selectModel('o3 mini', this)">
+                <div class="dropdown-item-icon">o3</div>
+                <div class="dropdown-item-body">
+                  <div class="dropdown-item-name">o3 mini</div>
+                  <div class="dropdown-item-desc">Fast reasoning model</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Theme toggle -->
+        <div class="theme-toggle" role="group" aria-label="Theme">
+          <button class="theme-opt" id="darkOpt" onclick="setTheme('dark')" title="Dark mode" aria-label="Dark mode">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+          </button>
+          <button class="theme-opt" id="lightOpt" onclick="setTheme('light')" title="Light mode" aria-label="Light mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+
+        <button class="header-action" onclick="alert('Share feature coming soon!')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CHAT BODY -->
+    <div class="chat-body" id="chatBody" onscroll="handleScroll()">
+      <div class="chat-inner" id="chatInner">
+
+        <!-- WELCOME STATE -->
+        <div class="welcome" id="welcomeScreen">
+          <div class="welcome-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+              <path d="M8 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <h1 class="welcome-title">What can I help with?</h1>
+          <p class="welcome-sub">Ask anything — write, code, analyze, create, or just chat.</p>
+          <div class="suggestion-grid">
+            <button class="suggestion-card" onclick="useSuggestion('Write a professional email declining a job offer')">
+              <div class="sug-icon">✉️</div>
+              <div>
+                <div class="sug-title">Write an email</div>
+                <div class="sug-desc">Drafts, replies, professional or casual</div>
+              </div>
+            </button>
+            <button class="suggestion-card" onclick="useSuggestion('Explain how machine learning works in simple terms')">
+              <div class="sug-icon">🧠</div>
+              <div>
+                <div class="sug-title">Explain a concept</div>
+                <div class="sug-desc">Clear explanations of complex topics</div>
+              </div>
+            </button>
+            <button class="suggestion-card" onclick="useSuggestion('Write a Python function to merge two sorted arrays')">
+              <div class="sug-icon">💻</div>
+              <div>
+                <div class="sug-title">Help with code</div>
+                <div class="sug-desc">Debug, review, or write new code</div>
+              </div>
+            </button>
+            <button class="suggestion-card" onclick="useSuggestion('Give me a 7-day itinerary for Nairobi, Kenya')">
+              <div class="sug-icon">🗺️</div>
+              <div>
+                <div class="sug-title">Plan a trip</div>
+                <div class="sug-desc">Itineraries, recommendations, tips</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- MESSAGES CONTAINER (hidden initially) -->
+        <div id="messagesContainer" class="hidden"></div>
+
+      </div>
+    </div>
+
+    <!-- SCROLL TO BOTTOM -->
+    <button class="scroll-btn hidden" id="scrollBtn" onclick="scrollToBottom()" title="Scroll to bottom">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </button>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <div class="input-inner">
+        <div class="input-box" id="inputBox">
+          <!-- Attachments row (hidden when empty) -->
+          <div class="attachment-row hidden" id="attachmentRow"></div>
+
+          <!-- Textarea row -->
+          <div class="textarea-row">
+            <!-- Attach button -->
+            <button class="input-btn" title="Attach file" onclick="triggerFileInput()" aria-label="Attach file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <input type="file" id="fileInput" class="hidden" multiple onchange="handleFiles(this)" />
+
+            <!-- Textarea -->
+            <textarea
+              class="chat-textarea"
+              id="chatInput"
+              placeholder="Message ChatGPT"
+              rows="1"
+              onkeydown="handleKeydown(event)"
+              oninput="handleInput(this)"
+              aria-label="Message input"
+            ></textarea>
+
+            <!-- Send button -->
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled title="Send message" aria-label="Send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar-row">
+            <div class="toolbar-left">
+              <button class="toolbar-btn" title="Search the web">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <span>Search</span>
+              </button>
+              <button class="toolbar-btn" title="Reason step by step">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                <span>Reason</span>
+              </button>
+              <button class="toolbar-btn" title="Voice input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+                <span>Voice</span>
+              </button>
+            </div>
+            <div class="toolbar-right">
+              <button class="toolbar-btn" title="More options">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="disclaimer">ChatGPT can make mistakes. Consider checking important information.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let theme = 'dark';
+let isTyping = false;
+let attachments = [];
+let activeConv = 'Design System Help';
+
+// ─────────────────────────────────────────
+// THEME
+// ─────────────────────────────────────────
+function setTheme(t) {
+  theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('darkOpt').classList.toggle('active', t === 'dark');
+  document.getElementById('lightOpt').classList.toggle('active', t === 'light');
+  localStorage.setItem('theme', t);
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('theme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  setTheme(saved);
+}
+
+// ─────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('mobileOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobileOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function selectConv(el, name) {
+  document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  activeConv = name;
+  closeSidebar();
+  showWelcome();
+}
+
+// ─────────────────────────────────────────
+// MODEL DROPDOWN
+// ─────────────────────────────────────────
+function toggleModelDropdown() {
+  const dd = document.getElementById('modelDropdown');
+  const btn = document.getElementById('modelBtn');
+  const open = !dd.classList.contains('hidden');
+  dd.classList.toggle('hidden', open);
+  btn.classList.toggle('open', !open);
+  btn.setAttribute('aria-expanded', String(!open));
+}
+
+function selectModel(name, el) {
+  document.getElementById('modelName').textContent = name;
+  document.querySelectorAll('.dropdown-item').forEach(i => {
+    i.classList.remove('selected');
+    const chk = i.querySelector('.dropdown-item-check');
+    if (chk) chk.remove();
+  });
+  el.classList.add('selected');
+  const chk = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  chk.setAttribute('class','dropdown-item-check');
+  chk.setAttribute('viewBox','0 0 24 24');
+  chk.setAttribute('fill','none');
+  chk.setAttribute('stroke','currentColor');
+  chk.setAttribute('stroke-width','2.5');
+  chk.setAttribute('stroke-linecap','round');
+  chk.setAttribute('stroke-linejoin','round');
+  chk.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+  el.appendChild(chk);
+  document.getElementById('modelDropdown').classList.add('hidden');
+  document.getElementById('modelBtn').classList.remove('open');
+}
+
+// ─────────────────────────────────────────
+// WELCOME / NEW CHAT
+// ─────────────────────────────────────────
+function showWelcome() {
+  document.getElementById('welcomeScreen').classList.remove('hidden');
+  document.getElementById('messagesContainer').classList.add('hidden');
+  document.getElementById('messagesContainer').innerHTML = '';
+  clearAttachments();
+  document.getElementById('chatInput').value = '';
+  updateSendBtn();
+}
+
+function newChat() {
+  document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
+  showWelcome();
+  closeSidebar();
+  document.getElementById('chatInput').focus();
+}
+
+function useSuggestion(text) {
+  document.getElementById('chatInput').value = text;
+  handleInput(document.getElementById('chatInput'));
+  document.getElementById('chatInput').focus();
+}
+
+// ─────────────────────────────────────────
+// INPUT HANDLING
+// ─────────────────────────────────────────
+function handleInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 192) + 'px';
+  updateSendBtn();
+}
+
+function updateSendBtn() {
+  const val = document.getElementById('chatInput').value.trim();
+  document.getElementById('sendBtn').disabled = !val && !isTyping;
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!document.getElementById('sendBtn').disabled) sendMessage();
+  }
+}
+
+// ─────────────────────────────────────────
+// FILE ATTACH
+// ─────────────────────────────────────────
+function triggerFileInput() { document.getElementById('fileInput').click(); }
+
+function handleFiles(input) {
+  for (const file of input.files) {
+    attachments.push(file);
+    addAttachmentChip(file.name);
+  }
+  input.value = '';
+}
+
+function addAttachmentChip(name) {
+  const row = document.getElementById('attachmentRow');
+  row.classList.remove('hidden');
+  const chip = document.createElement('div');
+  chip.className = 'att-chip';
+  chip.innerHTML = `<span class="att-chip-name">${escapeHtml(name)}</span><button class="att-chip-rm" onclick="removeAttachment(this,'${escapeHtml(name)}')" aria-label="Remove">×</button>`;
+  row.appendChild(chip);
+}
+
+function removeAttachment(btn, name) {
+  attachments = attachments.filter(f => f.name !== name);
+  btn.parentElement.remove();
+  if (!document.getElementById('attachmentRow').children.length)
+    document.getElementById('attachmentRow').classList.add('hidden');
+}
+
+function clearAttachments() {
+  attachments = [];
+  const row = document.getElementById('attachmentRow');
+  row.innerHTML = '';
+  row.classList.add('hidden');
+}
+
+// ─────────────────────────────────────────
+// MESSAGING
+// ─────────────────────────────────────────
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Show chat, hide welcome
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  const container = document.getElementById('messagesContainer');
+  container.classList.remove('hidden');
+
+  // Add user message
+  addMessage('user', text);
+
+  // Clear input
+  input.value = '';
+  input.style.height = 'auto';
+  clearAttachments();
+  updateSendBtn();
+
+  // Simulate AI response
+  simulateResponse(text);
+}
+
+function addMessage(role, content) {
+  const container = document.getElementById('messagesContainer');
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const avatarHtml = role === 'user'
+    ? `<div class="msg-avatar user">U</div>`
+    : `<div class="msg-avatar ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12l2 2 4-4"/></svg></div>`;
+
+  const bodyContent = role === 'user'
+    ? `<div class="msg-bubble user">${escapeHtml(content)}</div>`
+    : `<div class="msg-bubble ai" id="msgContent-${Date.now()}">${content}</div>
+       <div class="msg-actions">
+         <button class="msg-action-btn" onclick="toggleLike(this)" title="Good response">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+         </button>
+         <button class="msg-action-btn" title="Bad response">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>
+         </button>
+         <button class="msg-action-btn" onclick="copyMsg(this)" title="Copy">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+         </button>
+         <button class="msg-action-btn" title="Regenerate">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+         </button>
+       </div>`;
+
+  row.innerHTML = `${avatarHtml}<div class="msg-body">${bodyContent}</div>`;
+  container.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function showTyping() {
+  const container = document.getElementById('messagesContainer');
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.id = 'typingRow';
+  row.innerHTML = `
+    <div class="msg-avatar ai">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12l2 2 4-4"/></svg>
+    </div>
+    <div class="typing-dots">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  container.appendChild(row);
+  scrollToBottom();
+}
+
+function removeTyping() {
+  const row = document.getElementById('typingRow');
+  if (row) row.remove();
+}
+
+// Mock AI responses
+const responses = {
+  default: `<p>That's a great question! Let me think through this carefully.</p><p>There are several key factors to consider here, and I'll try to give you a comprehensive answer.</p><ul><li>First, it's important to understand the fundamentals</li><li>Then we can look at practical applications</li><li>Finally, we can explore advanced techniques</li></ul><p>Is there a specific aspect you'd like me to elaborate on?</p>`,
+  code: `<p>Here's a clean implementation for you:</p><div class="code-block"><div class="code-block-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy code</button></div><pre><code>def merge_sorted_arrays(arr1, arr2):
+    result = []
+    i = j = 0
+    
+    while i < len(arr1) and j < len(arr2):
+        if arr1[i] <= arr2[j]:
+            result.append(arr1[i])
+            i += 1
+        else:
+            result.append(arr2[j])
+            j += 1
+    
+    result.extend(arr1[i:])
+    result.extend(arr2[j:])
+    return result
+
+# Example usage
+a = [1, 3, 5, 7]
+b = [2, 4, 6, 8]
+print(merge_sorted_arrays(a, b))
+# Output: [1, 2, 3, 4, 5, 6, 7, 8]</code></pre></div><p>This runs in <code>O(n + m)</code> time and <code>O(n + m)</code> space — optimal for this problem.</p>`,
+  email: `<p>Here's a professional email declining the offer:</p><hr style="border:none;border-top:1px solid var(--border);margin:12px 0;"><p><strong>Subject:</strong> Re: Job Offer — [Position Name]</p><br><p>Dear [Hiring Manager's Name],</p><p>Thank you so much for offering me the [Position] role at [Company]. I genuinely appreciate the time you and your team invested in the interview process.</p><p>After careful consideration, I've decided to decline the offer. This was not an easy decision — I have great respect for what your team is doing. However, I've concluded that it isn't the right fit for me at this time.</p><p>I hope our paths cross again in the future, and I wish you and the team continued success.</p><p>Warm regards,<br>[Your Name]</p>`,
+  travel: `<p>Here's a packed 7-day itinerary for Nairobi! 🇰🇪</p><ul><li><strong>Day 1 — Arrive & Westlands:</strong> Settle in, explore the vibrant Westlands dining scene</li><li><strong>Day 2 — Nairobi National Park:</strong> Morning game drive just minutes from the city center</li><li><strong>Day 3 — Karen & Ngong Hills:</strong> Karen Blixen Museum, Giraffe Centre, and Bomas of Kenya</li><li><strong>Day 4 — City Centre:</strong> Nairobi National Museum, City Market, and Railway Museum</li><li><strong>Day 5 — Day Trip to Lake Naivasha:</strong> Boat ride, Crescent Island walk with wildlife</li><li><strong>Day 6 — Maasai Market & Food Tour:</strong> Local markets, Nyama Choma at Carnivore Restaurant</li><li><strong>Day 7 — Depart:</strong> Souvenir shopping at Utamaduni Craft Centre</li></ul><p>Best time to visit: June–October or December–March for dry weather. Would you like hotel recommendations?</p>`,
+};
+
+function getResponse(text) {
+  const t = text.toLowerCase();
+  if (t.includes('python') || t.includes('code') || t.includes('function') || t.includes('script')) return responses.code;
+  if (t.includes('email') || t.includes('letter') || t.includes('write')) return responses.email;
+  if (t.includes('nairobi') || t.includes('travel') || t.includes('itinerary') || t.includes('trip')) return responses.travel;
+  return responses.default;
+}
+
+function simulateResponse(userText) {
+  isTyping = true;
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+
+  setTimeout(() => {
+    removeTyping();
+    isTyping = false;
+    addMessage('ai', getResponse(userText));
+    updateSendBtn();
+  }, 1400 + Math.random() * 800);
+}
+
+// ─────────────────────────────────────────
+// SCROLL
+// ─────────────────────────────────────────
+function scrollToBottom() {
+  const body = document.getElementById('chatBody');
+  body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+}
+
+function handleScroll() {
+  const body = document.getElementById('chatBody');
+  const btn = document.getElementById('scrollBtn');
+  const atBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+  btn.classList.toggle('hidden', atBottom);
+}
+
+// ─────────────────────────────────────────
+// ACTIONS
+// ─────────────────────────────────────────
+function toggleLike(btn) { btn.classList.toggle('liked'); }
+
+function copyMsg(btn) {
+  const row = btn.closest('.msg-row');
+  const bubble = row.querySelector('.msg-bubble');
+  navigator.clipboard.writeText(bubble.innerText).catch(() => {});
+  btn.style.color = 'var(--brand)';
+  setTimeout(() => btn.style.color = '', 1200);
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).catch(() => {});
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20 6L9 17l-5-5"/></svg>Copied!`;
+  btn.style.color = 'var(--brand)';
+  setTimeout(() => {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy code`;
+    btn.style.color = '';
+  }, 1800);
+}
+
+// ─────────────────────────────────────────
+// CLOSE DROPDOWN ON OUTSIDE CLICK
+// ─────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#modelBtn') && !e.target.closest('#modelDropdown')) {
+    document.getElementById('modelDropdown').classList.add('hidden');
+    document.getElementById('modelBtn').classList.remove('open');
+    document.getElementById('modelBtn').setAttribute('aria-expanded','false');
+  }
+});
+
+// Handle window resize for sidebar
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 700) closeSidebar();
+});
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+initTheme();
+document.getElementById('chatInput').focus();
+</script>
+</body>
+</html>

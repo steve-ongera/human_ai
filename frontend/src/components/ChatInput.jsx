@@ -2,20 +2,22 @@
 import { useState, useRef, useCallback } from "react";
 
 export default function ChatInput({ onSend, disabled, onAttach, isStreaming, onStop }) {
-  const [value, setValue] = useState("");
-  const [focused, setFocus] = useState(false);
-  const textareaRef = useRef(null);
+  const [value, setValue]   = useState("");
+  const [files, setFiles]   = useState([]);   // { name, file }[]
+  const fileInputRef        = useRef(null);
+  const textareaRef         = useRef(null);
 
+  /* ── Submit ── */
   const submit = useCallback(() => {
     const text = value.trim();
     if (!text || disabled) return;
     onSend(text);
     setValue("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    setFiles([]);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
   }, [value, disabled, onSend]);
 
+  /* ── Keyboard: Enter sends, Shift+Enter newline ── */
   const onKey = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -23,62 +25,97 @@ export default function ChatInput({ onSend, disabled, onAttach, isStreaming, onS
     }
   };
 
+  /* ── Auto-resize textarea ── */
   const autoResize = (e) => {
-    e.target.style.height = "auto";
-    e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
     setValue(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 192) + "px";
   };
 
-  const handleAttach = () => {
-    if (onAttach) onAttach();
+  /* ── File attach ── */
+  const triggerFile = () => fileInputRef.current?.click();
+
+  const handleFiles = (e) => {
+    const added = Array.from(e.target.files).map((f) => ({ name: f.name, file: f }));
+    setFiles((prev) => [...prev, ...added]);
+    e.target.value = "";
   };
+
+  const removeFile = (name) => setFiles((prev) => prev.filter((f) => f.name !== name));
 
   const hasValue = value.trim().length > 0;
 
   return (
-    <div className="chat-input-wrapper">
-      <div className="chat-input-inner">
-        <div className={`chat-input-box ${focused ? "focused" : ""}`}>
-          {/* Attachments preview area (optional) */}
-          <div className="chat-attachments-row" style={{ display: "none" }}>
-            {/* Would show file attachments here */}
-          </div>
+    /* Mirrors .input-area in the design system */
+    <div className="input-area">
+      <div className="input-inner">
+        <div className="input-box">
 
-          {/* Textarea row */}
-          <div className="chat-textarea-row">
-            {onAttach && (
-              <button
-                className="chat-input-btn"
-                onClick={handleAttach}
-                title="Attach file"
-                type="button"
-                disabled={disabled}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                </svg>
-              </button>
-            )}
+          {/* ── Attachment chips ── */}
+          {files.length > 0 && (
+            <div className="attachment-row">
+              {files.map(({ name }) => (
+                <div className="att-chip" key={name}>
+                  <span className="att-chip-name">{name}</span>
+                  <button
+                    className="att-chip-rm"
+                    onClick={() => removeFile(name)}
+                    aria-label={`Remove ${name}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
+          {/* ── Textarea row ── */}
+          <div className="textarea-row">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleFiles}
+              aria-hidden="true"
+            />
+
+            {/* Attach button */}
+            <button
+              className="input-btn"
+              onClick={onAttach ?? triggerFile}
+              title="Attach file"
+              type="button"
+              disabled={disabled}
+              aria-label="Attach file"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
+              className="chat-textarea"
               value={value}
               onChange={autoResize}
               onKeyDown={onKey}
-              onFocus={() => setFocus(true)}
-              onBlur={() => setFocus(false)}
-              placeholder={disabled ? "Waiting for response..." : "Message humanAI..."}
+              placeholder={disabled ? "Waiting for response…" : "Message humanAI"}
               disabled={disabled}
               rows={1}
-              className="chat-textarea"
+              aria-label="Message input"
             />
 
+            {/* Stop / Send */}
             {isStreaming ? (
               <button
-                className="chat-stop-btn"
+                className="stop-btn"
                 onClick={onStop}
                 title="Stop generating"
                 type="button"
+                aria-label="Stop generating"
               >
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <rect x="6" y="6" width="12" height="12" rx="1" />
@@ -86,46 +123,63 @@ export default function ChatInput({ onSend, disabled, onAttach, isStreaming, onS
               </button>
             ) : (
               <button
-                className="chat-send-btn"
+                className="send-btn"
                 onClick={submit}
                 disabled={!hasValue || disabled}
                 type="button"
+                aria-label="Send message"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
               </button>
             )}
           </div>
 
-          {/* Toolbar row */}
-          <div className="chat-toolbar-row">
-            <div className="chat-toolbar-left">
-              <button className="chat-input-btn" title="Model" disabled={disabled}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3"/>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          {/* ── Toolbar ── */}
+          <div className="toolbar-row">
+            <div className="toolbar-left">
+              <button className="toolbar-btn" title="Search the web" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
                 </svg>
+                <span>Search</span>
               </button>
-              <button className="chat-input-btn" title="Attach" onClick={handleAttach} disabled={disabled}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+
+              <button className="toolbar-btn" title="Reason step by step" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4M12 16h.01" />
                 </svg>
+                <span>Reason</span>
+              </button>
+
+              <button className="toolbar-btn" title="Voice input" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                  <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
+                </svg>
+                <span>Voice</span>
               </button>
             </div>
-            <div className="chat-toolbar-right">
-              <button className="chat-input-btn" title="Temperature" disabled={disabled}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+
+            <div className="toolbar-right">
+              <button className="toolbar-btn" title="More options" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5"  cy="12" r="1" />
                 </svg>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Disclaimer */}
-        <div className="chat-disclaimer">
-          humanAI may produce inaccurate information.{" "}
+        {/* ── Disclaimer ── */}
+        <div className="disclaimer">
+          humanAI can make mistakes. Consider checking important information.{" "}
           <a href="#" target="_blank" rel="noopener noreferrer">Learn more</a>
         </div>
       </div>
